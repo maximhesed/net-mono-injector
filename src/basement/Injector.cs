@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+
 using asm = Assembler;
 using mem = Memory;
 
@@ -32,7 +33,7 @@ internal static class Injector
     private static bool proc_extended;
     private static bool attach;
 
-    internal static IntPtr asmp = IntPtr.Zero; // a current (previous) assembly pointer
+    internal static IntPtr asmp = IntPtr.Zero; /* The current (previous) assembly pointer. */
 
     private static void GetRootDomain(ref IntPtr root_domain) {
         Execute(Injector.exports["mono_get_root_domain"], ref root_domain);
@@ -167,25 +168,45 @@ internal static class Injector
         return asm.ToByteArray();
     }
 
-    private static bool GetExports(IntPtr mod_addr) {
-        int offset = 0x18;
-        int hdr_offset;
-        IntPtr p1; 
-        IntPtr p2;
-        IntPtr p3;
-        int fq;
-        string key;
+    private static bool GetExports(IntPtr addr) {
+        /* Walk through the PE format. You can find IMAGE_* in the winnt.h header. */
 
-        hdr_offset = mem.Read(mod_addr + 0x3c, 4); 
-        p1 = mod_addr + mem.Read(mod_addr + hdr_offset + (Injector.proc_extended ? 0x88 : 0x78), 4);
-        p2 = mod_addr + mem.Read(p1 + offset + 4, 4);
-        p3 = mod_addr + mem.Read(p1 + offset + 8, 4);
+        const int HFILE_SIZE = 20; /* sizeof(IMAGE_FILE_HEADER). */
+        const int DD32_OFFSET = 96; /* sizeof(IMAGE_OPTIONAL_HEADER32) - sizeof(hopt->DataDirectory). */
+        const int DD64_OFFSET = 112; /* sizeof(IMAGE_OPTIONAL_HEADER64) - sizeof(hopt->DataDirectory). */
 
-        fq = mem.Read(p1 + offset, 4);
+        /* ((IMAGE_DOS_HEADER *) addr)->e_lfanew. 
+         * (The each PE file starts with this header.) */
+        int e_lfanew;
+
+        IntPtr hfile; /* The pointer to the IMAGE_FILE_HEADER. */
+        IntPtr hopt; /* The pointer to the IMAGE_OPTIONAL_HEADER. */
+        IntPtr dd; /* ((IMAGE_OPTIONAL_HEADER *) hopt)->DataDirectory. */
+        IntPtr edata; /* The pointer to the IMAGE_EXPORT_DIRECTORY. */
+        int fq; /* edata->NumberOfFunctions. */
+        IntPtr pfuncs; /* edata->AddressOfFunctions. */
+        IntPtr pnames; /* edata->AddressOfNames. */
+        IntPtr pnords; /* edata->AddressOfNameOrdinals. */
+
+        e_lfanew = mem.Read(addr + 0x3c, 4);
+
+        hfile = addr + e_lfanew + sizeof(uint);
+        hopt = hfile + HFILE_SIZE;
+        dd = hopt + (Injector.proc_extended ? DD64_OFFSET : DD32_OFFSET);
+        edata = addr + mem.Read(dd, 4); /* Rude, but shorter. */
+
+        fq = mem.Read(edata + 0x14, 4);
+        pfuncs = addr + mem.Read(edata + 0x1c, 4);
+        pnames = addr + mem.Read(edata + 0x20, 4);
+        pnords = addr + mem.Read(edata + 0x24, 4);
+
         for (int i = 0; i < fq; i++) {
-            key = mem.ReadString(mod_addr + mem.Read(p3 + i * 4, 4), 64);
-            if (Injector.exports.ContainsKey(key))
-                Injector.exports[key] = mod_addr + mem.Read(p2 + i * 4, 4);
+            int ord = mem.Read(pnords + i * sizeof(short), 2) * sizeof(int);
+            IntPtr faddr = addr + mem.Read(pfuncs + ord, 4);
+            string fname = mem.ReadStr(addr + mem.Read(pnames + ord, 4), 32);
+
+            if (Injector.exports.ContainsKey(fname))
+                Injector.exports[fname] = faddr;
         }
 
         return Injector.exports.All(export => export.Value != IntPtr.Zero);

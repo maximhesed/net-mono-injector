@@ -113,9 +113,9 @@
             this.LblMethod.ForeColor = System.Drawing.Color.Black;
             this.LblMethod.Location = new System.Drawing.Point(41, 102);
             this.LblMethod.Name = "LblMethod";
-            this.LblMethod.Size = new System.Drawing.Size(82, 11);
+            this.LblMethod.Size = new System.Drawing.Size(47, 11);
             this.LblMethod.TabIndex = 22;
-            this.LblMethod.Text = "method name";
+            this.LblMethod.Text = "method";
             // 
             // LblProc
             // 
@@ -135,9 +135,9 @@
             this.LblClass.ForeColor = System.Drawing.Color.Black;
             this.LblClass.Location = new System.Drawing.Point(41, 76);
             this.LblClass.Name = "LblClass";
-            this.LblClass.Size = new System.Drawing.Size(75, 11);
+            this.LblClass.Size = new System.Drawing.Size(40, 11);
             this.LblClass.TabIndex = 21;
-            this.LblClass.Text = "class name";
+            this.LblClass.Text = "class";
             // 
             // LblNamespace
             // 

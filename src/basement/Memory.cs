@@ -13,109 +13,6 @@ internal static class Memory
         set;
     }
 
-    private static string Hex(this byte data) {
-        List<char> buf = new List<char>();
-        bool reverse = true; // 5 => "0fa2c3" + '5' <-> if !reverse
-        string value = "";
-
-        if (data == 0)
-            return "00";
-
-        if (data < 0x10) {
-            buf.Add('0');
-
-            reverse = false;
-        }
-
-        while (data != 0) {
-            byte r = (byte) (data % 16);
-
-            switch (r) {
-            case 10:
-                buf.Add('a');
-
-                break;
-            case 11:
-                buf.Add('b');
-
-                break;
-            case 12:
-                buf.Add('c');
-
-                break;
-            case 13:
-                buf.Add('d');
-
-                break;
-            case 14:
-                buf.Add('e');
-
-                break;
-            case 15:
-                buf.Add('f');
-
-                break;
-            default:
-                buf.Add((char) (r + '0'));
-
-                break;
-            }
-
-            data /= 16;
-        }
-
-        if (reverse)
-            buf.Reverse();
-
-        foreach (char digit in buf)
-            value += digit;
-
-        return value;
-    }
-
-    private static int Dec(this string data) {
-        int value = 0;
-
-        for (int i = 0; i < data.Length; i++) {
-            int num;
-
-            switch (data[i]) {
-            case 'a':
-                num = 10;
-
-                break;
-            case 'b':
-                num = 11;
-
-                break;
-            case 'c':
-                num = 12;
-
-                break;
-            case 'd':
-                num = 13;
-
-                break;
-            case 'e':
-                num = 14;
-
-                break;
-            case 'f':
-                num = 15;
-
-                break;
-            default:
-                num = data[i] - '0';
-
-                break;
-            }
-
-            value += num * (int) Math.Pow(16, data.Length - (i + 1));
-        }
-
-        return value;
-    }
-
     internal static void Dump(string file_name) {
         FileStream fs = File.Open(file_name, FileMode.OpenOrCreate);
         StringBuilder sb = new StringBuilder();
@@ -140,12 +37,12 @@ internal static class Memory
             Utils.Assert("ReadProcessMemory");
 
         foreach (byte b in buf.Reverse())
-            value += b.Hex();
+            value += b.ToString("x2");
 
-        return value.TrimStart('0').Dec();
+        return Convert.ToInt32(value, 0x10);
     }
 
-    internal static string ReadString(IntPtr addr, int length) {
+    internal static string ReadStr(IntPtr addr, int length) {
         string str = "";
 
         for (int i = 0; i < length; i++) {

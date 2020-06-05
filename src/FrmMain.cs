@@ -82,7 +82,7 @@ internal sealed partial class FrmMain : Form
     }
 
     private void ProcPullSafe(Process proc) {
-        // remove all loaded libs of the exited process
+        /* Remove all loaded libs of the exited process. */
         for (int i = this.LstLibs.Items.Count - 1; i >= 0; i--) {
             string item = this.LstLibs.Items[i].ToString();
 
@@ -417,7 +417,7 @@ internal sealed partial class FrmMain : Form
     }
 
     private void CmbProcs_SelectedIndexChanged(object sender, EventArgs e) {
-        // remove loaded libs of the previous selected process
+        /* Remove loaded libs of the previous selected process from the list. */
         for (int i = 0; i < this.LstLibs.Items.Count; i++) {
             string item = this.LstLibs.Items[i].ToString();
 
@@ -425,7 +425,7 @@ internal sealed partial class FrmMain : Form
                 this.LstLibs.Items.Remove(item);
         }
 
-        // add loaded libs of the current selected process
+        /* Add loaded libs of the selected process to the list. */
         foreach (string lib in GetCurrData().libs)
             this.LstLibs.Items.Add(lib);
     }
